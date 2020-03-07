@@ -1,0 +1,38 @@
+best_score = 0
+
+for c_paramter in [0.001, 0.01, 0.1, 1, 10, 100, 1000]: #iterate over the values we need to try for the parameter C
+    for gamma_paramter in [0.001, 0.01, 0.1, 1, 10, 100, 1000]: #iterate over the values we need to try for the parameter gamma
+        for k_parameter in ['rbf', 'linear', 'poly', 'sigmoid']: # iterate over the values we need to try for the kernel parameter
+            svmModel = SVC(kernel=k_parameter, C=c_paramter, gamma=gamma_paramter) #define the model
+            # perform cross-validation
+            scores = cross_val_score(svmModel, X_trainval_scaled, Y_trainval, cv=kfolds, scoring='accuracy')
+            # the training set will be split internally into training and cross validation
+
+            # compute mean cross-validation accuracy
+            score = np.mean(scores)
+            # if we got a better score, store the score and parameters
+            if score > best_score:
+                best_score = score #store the score 
+                best_parameter_c = c_paramter #store the parameter c
+                best_parameter_gamma = gamma_paramter #store the parameter gamma
+                best_parameter_k = k_parameter
+            
+
+# rebuild a model with best parameters to get score 
+SelectedSVMmodel = SVC(C=best_parameter_c, gamma=best_parameter_gamma, kernel=best_parameter_k).fit(X_trainval_scaled, Y_trainval)
+
+test_score = SelectedSVMmodel.score(X_test_scaled, Y_test)
+PredictedOutput = SelectedSVMmodel.predict(X_test_scaled)
+test_recall = recall_score(Y_test, PredictedOutput, pos_label=1)
+fpr, tpr, thresholds = roc_curve(Y_test, PredictedOutput, pos_label=1)
+test_auc = auc(fpr, tpr)
+print("Best accuracy on cross validation set is:", best_score)
+print("Best parameter for c is: ", best_parameter_c)
+print("Best parameter for gamma is: ", best_parameter_gamma)
+print("Best parameter for kernel is: ", best_parameter_k)
+print("Test accuracy with the best parameters is", test_score)
+print("Test recall with the best parameters is", test_recall)
+print("Test recall with the best parameter is", test_auc)
+
+m = 'SVM'
+acc.append([m, test_score, test_recall, test_auc, fpr, tpr, thresholds])
